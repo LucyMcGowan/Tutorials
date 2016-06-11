@@ -1,8 +1,6 @@
 ---
 title: "Google Analytics API Pulls"
-author: 
-- Lucy D'Agostino McGowan 
-- Nick Strayer
+author:  "Lucy D'Agostino McGowan and Nick Strayer""
 date: "June 10, 2016"
 output: html_document
 ---
