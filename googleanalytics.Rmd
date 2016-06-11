@@ -1,0 +1,72 @@
+---
+title: "Google Analytics API Pulls"
+author: 
+- Lucy D'Agostino McGowan 
+- Nick Strayer
+date: "June 10, 2016"
+output: html_document
+---
+
+We recently attempted to pull Google Analytics data and found the process a bit confusing, so we put together an overly specific step by step guide.
+
+###Step 1
+
+Go to the [Google API Dashboard](https://console.developers.google.com/iam-admin/projects) 
+
+- On the top right there is a "Select a Project" drop down. Click "Create a Project" to create one.
+- In the Overview tab there is a "Google APIs" tab and an "Enabled APIs" tab on the right with a search bar below them. Search "Analytics API" and select the result by the same name.
+- Select Application Type, use "Other UI"
+- Follow steps to create a client id, then download the JSON data and extract the client ID and secret and put it in your script (or somewhere safer). 
+- The first time you implement this code, you will put the client id and client secret in (as demonstrated below). After this, you can save these tokens and load them for future use.
+
+###Step 2
+- load the `RGoogleAnalytics` package
+- For the first run, input the client id and client secret in quotes
+- Create a `token`
+```{r,eval=F}
+#Update the client.id and client.secret from the file you downloaded
+library(RGoogleAnalytics)
+client.id  <- "client.id"
+client.secret <- "client.secret"
+
+token <- Auth(client.id,client.secret)
+```
+
+This will ask you if you want to "Use a local file to cache OAuth access credentials between R sessions?" Type `1` and follow the browser instructions. 
+
+```{r,eval=F}
+# Save the token
+save(token,file="./token_file")
+```
+After the first time, you can use the following code to load and authorize the token
+```{r,eval=F}
+# Load the token
+load("./token_file")
+
+# Validate the token
+ValidateToken(token)
+```
+###Step 3
+Create a query list
+- Indicate the date range you are interested in accessing data from using the `start.date` and `end.date` inputs
+- Add `dimensions` and `metrics` that you are interested in the form `ga:` then the name of the dimension/metric. A list of dimensions and metrics availabe can be found on the [Google Analytics Website](https://developers.google.com/analytics/devguides/reporting/core/dimsmets)
+- The `table.id` can be found by navigating to your Google Analytics page. On the top there is an "Admin" tab. Click that and navigate to "View Settings" on the right. Under "Basic Settings" a "View ID" should be listed. Add this after the `ga:` for the `table.id` input. 
+- Optionally, you can chose to sort your data using the `sort` argument. Here, we are sorting by the metric `bounces`. You can also filter -- here we are filtering by referrals. You can also limit the maximum number of results using the `max.results` argument.
+```{r,eval=F}
+#Customize this before running
+
+query.init <- Init(start.date = "2015-01-01",
+                   end.date = "2016-06-01",
+                   dimensions = c("ga:source","ga:medium",...),
+                   metrics = c("ga:sessions","ga:bounces",...),
+                   max.results = 10000,
+                   sort = "-ga:bounces",
+                   filters="ga:medium==referral"
+                   table.id = "ga:123456")
+```
+###Step 4
+Use the `QueryBuilder` to build the query list and `GetReportData` to pull the data into a data frame.
+```{r,eval=F}
+query <- QueryBuilder(query.init)
+data <- GetReportData(query, token)
+```
