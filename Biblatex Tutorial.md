@@ -17,7 +17,7 @@ Create a file with the .bib extension (mine is called "mylib.bib") in the same f
 You can either fill in the template above, or if you search the journal title in [Google scholar](scholar.google.com), click "Cite" under the article description and then click the "BibTex" link on the bottom left.
 
 ###Step 2
-- Add ```\usepackage[backend=biber,maxbibnames=10,citestyle=science]{biblatex}``` to the top of your LaTeX document.
+- Add ```\usepackage[backend=biber,maxnames=10,citestyle=science]{biblatex}``` to the top of your LaTeX document. There are many different potential [citation styles](https://www.sharelatex.com/learn/Biblatex_citation_styles) to choose from (here I chose the science style). You can also change the number of names shown before "et al", using the ```maxnames=``` option, here I have chosen 10. If you choose a citation style that uses author names for in-text citations, this will update the number of names shown for that as well. To seperately chose the number of names shown, use ```maxcitenames=``` and ```maxbibnames=``` 
 - Before ```\begin{document}```, add ```\addbibresource{mylib.bib}``` 
 
 ###Step 3
