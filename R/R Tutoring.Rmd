@@ -1,0 +1,289 @@
+---
+title: "R Tutoring Notebook"
+author: Lucy D'Agostino McGowan, Allison Hainline, Jacquelyn Neal
+output: 
+  html_notebook:
+    toc: True
+---
+
+##Basics
+
+###Getting Help
+
+There are many ways to receive help with `R`. Often, the best answers are available via [Google](http://google.com) and [Stack Overflow](http://stackoverflow.com/questions/tagged/r). You can also receive help from within `R`. Try running the following commands by *Cmd+Shift+Enter* or hitting the green arrow *Run* butting within the chunk.
+
+```{r}
+help.start()
+#This is a comment try adding a comment below about what you learned by running the command above
+```
+
+```{r}
+#what do these do?
+?data.frame
+example(data.frame)
+```
+
+###Unique `R` Quirks
+
+* `R` is case sensitive
+* Lots of functions are automatically loaded with `R`. There are also lots of packages that users have created (this is something that makes `R` so cool!). [CRAN](https://cran.r-project.org) houses lots of packages. You can use these by using the `install.packages()` function. For example, `Hmisc` (Harrell's Miscellanous) is used very frequently in the biostat department - try installing that.
+
+```{r}
+install.packages("Hmisc")
+```
+
+* You only need to install a package on your computer once; after that, you just need to call a library.
+
+```{r}
+library(Hmisc)
+```
+
+Try installing the `ggplot2` package & calling the library in the chunk below:
+
+```{r}
+#install ggplot2 and call the library
+
+
+```
+
+* You can save all output by using the `<-` assign or `=`
+
+###Data types
+
+*This is not a comprehensive list of all data types, but it should cover what you will encounter*
+
+* vectors
+    * 1 dimensional collection of objects
+* matrices
+    * R doesn’t distinguish between row and column vectors, but it does have (nx1) and (1xn) matrices
+* data frames
+    * 2 dimensional array of entries—usually columns=variables, rows=subjects
+* lists
+
+
+####Vectors
+```{r}
+vector.char <- c("Harry Potter","Fred Weasley","Sirus Black", "Albus Dumbledore") #character vector
+vector.num <- c(1991, 1989, 1971, 1892) #numeric vector
+```
+Common classes of vectors:
+* numeric
+* character
+* Date
+* factor
+* logical
+
+You can check the class of a vector using the `class()` function
+```{r}
+#check the class of vector.char
+
+
+```
+
+To access elements of a vector, you can reference their index. For example, if we wanted to look at the first element of the vector `vector.num`, we would run the following.
+
+```{r}
+vector.num[1]
+```
+Notice the use of square brackets!
+####Matrices
+
+Matrices are for organizing data of the same type. 
+```{r}
+mat <- matrix(1:10,ncol = 2,nrow = 5)
+mat2 <- matrix(11:20, ncol = 2, nrow = 5)
+```
+
+Similar to vectors, we can access elements of matrices by referencing the row and column indices. For example, to reference the value in the third row, second column, we would do the following.
+
+```{r}
+mat[3,2]
+```
+You could also look at an entire row or column by leaving the other blank like so,
+```{r}
+mat[3,]
+```
+
+*Aside*: `R` has certain built in ways to manipulate numeric matrices.
+```{r}
+#addition
+mat + mat2
+```
+
+```{r}
+#multiplication and transposition
+mat %*% t(mat2)
+```
+
+
+####Data frames
+Data frames are 2 dimensional arrays of entries. They are more flexible than matrices in that each column can have a different data type, however all columns must be the same length. Generally the columns are variables and the rows are subjects. We can use the vectors we have already created above to make a data frame.
+```{r}
+data <- data.frame(name = vector.char, year = vector.num)
+```
+
+You can reference elements in a dataframe in a similar way to matricies by calling the specific row and column indices. You can also reference a column by using the name of the column. To do this, you use the `$`. For example, if we wanted to look at the year variable, we would run the following.
+
+```{r}
+data[,2] #reference using the index
+data$year #reference using the name and $
+data[,'year'] #reference using the name as the index
+```
+
+
+####Lists
+Lists are the most flexible structure. They are a collection of things without any restriction on the class or length.
+```{r}
+example.list <- list(vector.char, vector.num, mat, mat2,data)
+```
+
+Elements in lists can be accessed by using square brackets [].
+```{r}
+example.list[[5]]
+```
+To index an element within a list, we combine indexing procedures for lists and the associated element's data type. 
+```{r}
+example.list[[5]][,'year']
+```
+
+##Getting data
+
+For most datasets (depending on the data type), `read.table` or `read.csv` will suffice.
+
+```{r}
+names <- read.table("hpnames.txt", header = TRUE, stringsAsFactors = FALSE)
+```
+Notice `stringsAsFactors`. For more information check out `?read.table`.
+
+```{r}
+attr <- read.csv("hpattributes.csv", header = TRUE)
+```
+
+##First looks
+
+Some common functions for data exploration are
+* `head()`
+* `tail()`
+* `str()`
+* `dim()`
+* `table()`
+
+```{r}
+head(names)
+```
+
+```{r}
+str(attr)
+```
+
+```{r}
+#try exploring the dataset names
+
+
+```
+
+##Data cleaning 
+variable names: names(slots) <- c(“w1”, “w2”, “w3”)
+strings vs. factors
+levels() for factors
+as.numeric / as.character
+
+###Factors
+
+Another variable type is "factor". Factors are nominal variables. When we looked at `str(attr)` before we saw that the house variable was an integer. We can convert this to a factor with specific levels.
+
+```{r}
+attr$house <- factor(attr$house, levels = c(1,2,3,4), labels = c("Gryffindor", "Hufflepuff", "Ravenclaw", "Slytherin"))
+
+#look at it in a table
+table(attr$house)
+```
+
+
+##Data manipulation
+Here, we have two data sets, `names` and `attr` that both have information about the same students, linked through a common variable (`id`). We can use `merge()` to create one dataset.
+
+```{r}
+hp <- merge(names, attr, by = "id")
+```
+
+
+```{r}
+#check out the first 6 lines of the newly created dataset, hp 
+
+
+```
+Notice how the new dataset has merged! 
+
+###Operators
+* == - equal
+* %in% - contained in
+* < - less than
+* \> - greater than
+* & - and
+* | - or
+* ! - not
+
+Sometimes you only want to look at a specific subset of the data. For example, perhaps we are only interested in students sorted into Gryffindor (because, obviously...).
+```{r}
+hp[hp$house == "Gryffindor", ]
+```
+
+Perhaps we will allow the Hufflepuffs to join our club.
+```{r}
+club <- hp[hp$house %in% c("Gryffindor","Hufflepuff"), ]
+```
+
+Or maybe you were interested in only looking at the young'ns.
+```{r}
+youngins <- hp[hp$schoolyear > 1993, ]
+```
+
+The dataset is currently sored alphabetically by name, perhaps we want to sort it by house.
+```{r}
+hp.sortinghat <- hp[order(hp$house),]
+```
+
+```{r}
+#check out the last 6 rows of data
+
+
+```
+
+###Sampling
+Students are concerned about favoritism in housing. Imagine we are tasked with putting together a randomly selected advisory committee consisting of 8 students to evaluate this concern. This is easy using `R`! We could use `sample()`. In order to make this reproducible (YAY!) make sure to set a seed!
+```{r}
+set.seed(07311980)
+sample(hp$name,8)
+```
+
+###Subsetting
+Crabbe and Goyle raised the concern that there are not enough Slytherins represented. Let's check out that accusation. First, we can subset based on the sample. We could use the methods detailed above, or the `subset()` function.
+
+```{r}
+set.seed(07311980)
+advisory.names<- sample(hp$name,8)
+advisory.council <- subset(hp, name %in% advisory.names)
+table(advisory.council$house)
+```
+True to their nature (lol jk, but for real), it looks like Hufflepuff are being doormats (jk it takes all kinds). Slytherin, in fact, has the most participants! So Crabbe and Goyle can go back to Stat 101. OH WAIT they don't teach that at Hogwarts. Major education fail. 
+
+##Plotting
+Crabbe and Goyle were not satisfied with your table, because they have a hard time with numbers. Maybe a graph will help.
+```{r}
+ggplot(advisory.council, aes(x = house, fill = house)) +
+  scale_x_discrete("House", drop = FALSE) + # don't forget Hufflepuff!
+  geom_bar() + #add the bars
+  scale_fill_manual(name = "House", values = c("#ae0001","#ecb939","#222f5b","#2a623d"), drop = FALSE) + # house colors!
+  labs(title = "Proof for Crabbe and Goyle", y = "Number on Advisory Council")
+```
+Take that, Crabbe and Goyle!
+
+##Saving datasets
+Let's save our advisory council dataset to send to Professor McGonagall.
+```{r}
+write.csv(advisory.council, file = 'advisory.csv')
+```
+
+
+
