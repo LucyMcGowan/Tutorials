@@ -247,7 +247,6 @@ hp.sortinghat <- hp[order(hp$house),]
 ```{r}
 #check out the last 6 rows of data
 
-
 ```
 
 ###Sampling
@@ -285,5 +284,14 @@ Let's save our advisory council dataset to send to Professor McGonagall.
 write.csv(advisory.council, file = 'advisory.csv')
 ```
 
+##References
+
+Thank you for making this data accessible, Goele and Nadine!
+
+Goele Bossaert and Nadine Meidert (2013). 'We are only as strong as we are united, as weak as we are divided'. A dynamic analysis of the peer support networks in the Harry Potter books. Open Journal of Applied Sciences, Vol. 3 No. 2, pp. 174-185. 
+http://dx.doi.org/10.4236/ojapps.2013.32024
+```{r}
+sessionInfo()
+```
 
 
