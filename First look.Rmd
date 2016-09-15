@@ -1,0 +1,82 @@
+---
+title: "Gun.io First Look"
+author: "Lucy D’Agostino McGowan"
+date: "June 13, 2016"
+output: html_document
+---
+```{r}
+library(tm)
+library(SnowballC)
+library(wordcloud)
+```
+
+Pull in lead data from close.io
+```{r}
+dat<-read.csv("~/Documents/gunio/Gun.io leads 2016-06-13 16-16.csv")
+```
+
+Pull in LOE data
+```{r}
+loe<-read.csv("~/Documents/gunio/signed_LOE.csv")
+LOE<-dat[dat$primary_contact_primary_email %in% loe$Email | (dat$name %in% loe$Description & dat$name != "") | (dat$display_name %in% loe$Description & dat$display_name != "") ,]
+dat[dat$name %in% loe$Description & dat$name != "","name"]
+
+#check who is not in there
+loe[!(loe$Description %in% LOE$primary_contact_name |  loe$Email %in% LOE$primary_contact_primary_email),]
+
+#delitor -- Glenn Devitt , 
+#Accudraw -- should be tim meyer
+#wonderthings, redishade, zaapt, not in Close
+
+LOE<-dat[dat$primary_contact_primary_email %in% loe$Email | (dat$name %in% loe$Description & dat$name != "") | (dat$display_name %in% loe$Description & dat$display_name != "") | dat$display_name %in% c("Tim Meyer","Glenn Devitt") ,]
+
+#create indicator for LOE
+dat$loe<-ifelse(dat$id %in% LOE$id,1,0)
+
+#create times communicated before loe
+dat<-merge(dat,loe[,c("Email","Created..UTC.")],by.x="primary_contact_primary_email",by.y="Email",all.x=T)
+
+#eek not possible because we don't have dates...
+```
+Just look at primary email
+
+
+```{r}
+email<-dat[,c("id","display_name","name","status_label","date_created","primary_contact_primary_email","times_communicated","primary_opportunity_value")]
+
+#subset to 2016
+email$date<-as.Date(gsub(" .*$","",email$date_created))
+
+email$year_created<-as.numeric(gsub("-.*$","",email$date_created))
+
+email<-email[email$year==2016,]
+
+#check which are admins, etc
+email$email_name<-gsub( "@.*$", "", email$primary_contact_primary_email )
+
+#word cloud
+emailCorpus <- Corpus(VectorSource(email$email_name))
+emailCorpus <- tm_map(emailCorpus, PlainTextDocument)
+wordcloud(emailCorpus,min.freq=2)
+
+```
+
+Big general words: 
+
+- info
+- hello
+- admin
+- jobs
+- team 
+
+```{r}
+#generic email name category
+email$email_cat<-ifelse(email$email_name=="info" | email$email_name=="hello" | email$email_name=="admin" | email$email_name=="jobs"|email$email_name=="team",1,0)
+
+#categorize times communicated >1 <1
+email$comm_cat<-ifelse(email$times_communicated<=1,1,0)
+
+```
+Dead end
+
+
