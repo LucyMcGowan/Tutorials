@@ -183,10 +183,6 @@ str(attr)
 ```
 
 ##Data cleaning 
-variable names: names(slots) <- c(“w1”, “w2”, “w3”)
-strings vs. factors
-levels() for factors
-as.numeric / as.character
 
 ###Factors
 
