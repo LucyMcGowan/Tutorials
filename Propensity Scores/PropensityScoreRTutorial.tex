@@ -1,0 +1,623 @@
+\documentclass{article}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+\usepackage{fancyhdr}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{gensymb}
+\usepackage{enumerate}
+\usepackage{longtable,cancel,booktabs,lscape,float,subcaption}
+\usepackage{needspace,setspace,relsize,url}
+ \textwidth 6.75in              % set dimensions before fancyhdr
+ \textheight 9.25in
+ \topmargin -.875in
+ \oddsidemargin -.125in
+ \evensidemargin -.125in
+
+\title{Propensity Scores with R Tutorial}
+\author{Lucy D'Agostino McGowan}
+\date{\today}
+\newcommand{\bn}[1]{\mathbf{#1}}
+\newcommand{\bs}{\boldsymbol}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\begin{document}
+ 	\pagestyle{fancy}
+ \rhead{\scriptsize Lucy D'Agostino McGowan - R Tutorial\\ \today}
+\allowdisplaybreaks
+\maketitle
+\section*{Install R Packages}
+For this tutorial, you will need Frank Harrell's Regression Modeling Strategies package, Matt Shotwell's package to read in SAS datasets, and the MatchIt package for matching. If this has not yet been installed, run \texttt{install.packages("rms")}, \texttt{install.packages("sas7bdat")}, and \texttt{install.packages("MatchIt")}. Otherwise, run the following,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{require}\hlstd{(rms)}
+\hlkwd{require}\hlstd{(sas7bdat)}
+\hlkwd{require}\hlstd{(MatchIt)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\section*{Read in your data}
+There are many different ways to read in data. Here, I will demonstrate how to read in .csv files and SAS data files. Here \texttt{dat} is what I am naming the dataset in \texttt{R}. The file path for my data is\\ ``/Users/lucymcgowan/Documents/Consulting/Edwards/data.csv''. I will first use the \texttt{read.csv()} function,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{dat}\hlkwb{<-}\hlkwd{read.csv}\hlstd{(}\hlstr{"/Users/lucymcgowan/Documents/Consulting/Edwards/data.csv"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+If the data was a SAS dataset, you can import it as follows,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{dat}\hlkwb{<-}\hlkwd{read.sas7bdat}\hlstd{(}\hlstr{"/Users/lucymcgowan/Documents/Consulting/Edwards/data.sas7bdat"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\section*{Run descriptive Statistics}
+To look at descriptives, we can use Harrell's \texttt{describe()} function,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{describe}\hlstd{(dat)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{spacing}{0.7}
+\begin{center}\textbf{ dat \\ 8 Variables~~~~~ 1000 ~Observations}\end{center}
+\smallskip\hrule\smallskip{\small
+\vbox{\noindent\textbf{id}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
+\put(0,0){\line(0,1){100}}
+\put(15,0){\line(0,1){100}}
+\put(30,0){\line(0,1){100}}
+\put(45,0){\line(0,1){100}}
+\put(60,0){\line(0,1){100}}
+\put(75,0){\line(0,1){100}}
+\put(90,0){\line(0,1){100}}
+\put(105,0){\line(0,1){100}}
+\put(120,0){\line(0,1){100}}
+\put(135,0){\line(0,1){100}}
+\put(150,0){\line(0,1){100}}
+\put(165,0){\line(0,1){100}}
+\put(180,0){\line(0,1){100}}
+\put(195,0){\line(0,1){100}}
+\put(210,0){\line(0,1){100}}
+\put(225,0){\line(0,1){100}}
+\put(240,0){\line(0,1){100}}
+\put(255,0){\line(0,1){100}}
+\put(270,0){\line(0,1){100}}
+\put(285,0){\line(0,1){100}}
+\put(300,0){\line(0,1){100}}
+\put(315,0){\line(0,1){100}}
+\put(330,0){\line(0,1){100}}
+\put(345,0){\line(0,1){100}}
+\put(360,0){\line(0,1){100}}
+\put(375,0){\line(0,1){100}}
+\put(390,0){\line(0,1){100}}
+\put(405,0){\line(0,1){100}}
+\put(420,0){\line(0,1){100}}
+\put(435,0){\line(0,1){100}}
+\put(450,0){\line(0,1){100}}
+\put(465,0){\line(0,1){100}}
+\put(480,0){\line(0,1){100}}
+\put(495,0){\line(0,1){100}}
+\put(510,0){\line(0,1){100}}
+\put(525,0){\line(0,1){100}}
+\put(540,0){\line(0,1){100}}
+\put(555,0){\line(0,1){100}}
+\put(570,0){\line(0,1){100}}
+\put(585,0){\line(0,1){100}}
+\put(600,0){\line(0,1){100}}
+\put(615,0){\line(0,1){100}}
+\put(630,0){\line(0,1){100}}
+\put(645,0){\line(0,1){100}}
+\put(660,0){\line(0,1){100}}
+\put(675,0){\line(0,1){100}}
+\put(690,0){\line(0,1){100}}
+\put(705,0){\line(0,1){100}}
+\put(720,0){\line(0,1){100}}
+\put(735,0){\line(0,1){100}}
+\put(750,0){\line(0,1){100}}
+\put(765,0){\line(0,1){100}}
+\put(780,0){\line(0,1){100}}
+\put(795,0){\line(0,1){100}}
+\put(810,0){\line(0,1){100}}
+\put(825,0){\line(0,1){100}}
+\put(840,0){\line(0,1){100}}
+\put(855,0){\line(0,1){100}}
+\put(870,0){\line(0,1){100}}
+\put(885,0){\line(0,1){100}}
+\put(900,0){\line(0,1){100}}
+\put(915,0){\line(0,1){100}}
+\put(930,0){\line(0,1){100}}
+\put(945,0){\line(0,1){100}}
+\put(960,0){\line(0,1){100}}
+\put(975,0){\line(0,1){100}}
+\put(990,0){\line(0,1){100}}
+\put(1005,0){\line(0,1){100}}
+\put(1020,0){\line(0,1){100}}
+\put(1035,0){\line(0,1){100}}
+\put(1050,0){\line(0,1){100}}
+\put(1065,0){\line(0,1){100}}
+\put(1080,0){\line(0,1){100}}
+\put(1095,0){\line(0,1){100}}
+\put(1110,0){\line(0,1){100}}
+\put(1125,0){\line(0,1){100}}
+\put(1140,0){\line(0,1){100}}
+\put(1155,0){\line(0,1){100}}
+\put(1170,0){\line(0,1){100}}
+\put(1185,0){\line(0,1){100}}
+\put(1200,0){\line(0,1){100}}
+\put(1215,0){\line(0,1){100}}
+\put(1230,0){\line(0,1){100}}
+\put(1245,0){\line(0,1){100}}
+\put(1260,0){\line(0,1){100}}
+\put(1275,0){\line(0,1){100}}
+\put(1290,0){\line(0,1){100}}
+\put(1305,0){\line(0,1){100}}
+\put(1320,0){\line(0,1){100}}
+\put(1335,0){\line(0,1){100}}
+\put(1350,0){\line(0,1){100}}
+\put(1365,0){\line(0,1){100}}
+\put(1380,0){\line(0,1){100}}
+\put(1395,0){\line(0,1){100}}
+\put(1410,0){\line(0,1){100}}
+\put(1425,0){\line(0,1){100}}
+\put(1440,0){\line(0,1){100}}
+\put(1455,0){\line(0,1){100}}
+\put(1470,0){\line(0,1){100}}
+\put(1485,0){\line(0,1){100}}
+\end{picture}
+
+{\smaller
+\begin{tabular}{ rrrrrrrrrrrr }
+n&missing&unique&Info&Mean&.05&.10&.25&.50&.75&.90&.95 \\
+1000&0&1000&1&500.5& 50.95&100.90&250.75&500.50&750.25&900.10&950.05 \end{tabular}
+\begin{verbatim}
+lowest :    1    2    3    4    5, highest:  996  997  998  999 1000 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{age}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
+\put(0,0){\line(0,1){2}}
+\put(15,0){\line(0,1){10}}
+\put(45,0){\line(0,1){2}}
+\put(60,0){\line(0,1){2}}
+\put(90,0){\line(0,1){10}}
+\put(120,0){\line(0,1){10}}
+\put(135,0){\line(0,1){8}}
+\put(165,0){\line(0,1){12}}
+\put(195,0){\line(0,1){22}}
+\put(210,0){\line(0,1){20}}
+\put(240,0){\line(0,1){28}}
+\put(270,0){\line(0,1){20}}
+\put(285,0){\line(0,1){25}}
+\put(315,0){\line(0,1){35}}
+\put(330,0){\line(0,1){42}}
+\put(360,0){\line(0,1){50}}
+\put(390,0){\line(0,1){35}}
+\put(405,0){\line(0,1){35}}
+\put(435,0){\line(0,1){48}}
+\put(465,0){\line(0,1){72}}
+\put(480,0){\line(0,1){70}}
+\put(510,0){\line(0,1){68}}
+\put(540,0){\line(0,1){65}}
+\put(555,0){\line(0,1){88}}
+\put(585,0){\line(0,1){70}}
+\put(600,0){\line(0,1){85}}
+\put(630,0){\line(0,1){100}}
+\put(660,0){\line(0,1){42}}
+\put(675,0){\line(0,1){70}}
+\put(705,0){\line(0,1){78}}
+\put(735,0){\line(0,1){82}}
+\put(750,0){\line(0,1){72}}
+\put(780,0){\line(0,1){62}}
+\put(810,0){\line(0,1){70}}
+\put(825,0){\line(0,1){58}}
+\put(855,0){\line(0,1){62}}
+\put(885,0){\line(0,1){50}}
+\put(900,0){\line(0,1){28}}
+\put(930,0){\line(0,1){32}}
+\put(945,0){\line(0,1){30}}
+\put(975,0){\line(0,1){35}}
+\put(1005,0){\line(0,1){30}}
+\put(1020,0){\line(0,1){25}}
+\put(1050,0){\line(0,1){25}}
+\put(1080,0){\line(0,1){20}}
+\put(1095,0){\line(0,1){15}}
+\put(1125,0){\line(0,1){12}}
+\put(1155,0){\line(0,1){10}}
+\put(1170,0){\line(0,1){18}}
+\put(1200,0){\line(0,1){2}}
+\put(1215,0){\line(0,1){2}}
+\put(1245,0){\line(0,1){2}}
+\put(1275,0){\line(0,1){5}}
+\put(1365,0){\line(0,1){2}}
+\put(1425,0){\line(0,1){2}}
+\put(1485,0){\line(0,1){2}}
+\end{picture}
+
+{\smaller
+\begin{tabular}{ rrrrrrrrrrrr }
+n&missing&unique&Info&Mean&.05&.10&.25&.50&.75&.90&.95 \\
+793&207&56&1&30.37&13.6&17.0&24.0&30.0&37.0&44.0&47.0 \end{tabular}
+\begin{verbatim}
+lowest :  4  5  6  7  8, highest: 55 56 60 62 65 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{sex}
+
+{\smaller
+\begin{tabular}{ rrr }
+n&missing&unique \\
+1000&0&2 \end{tabular}
+\begin{verbatim}
+
+0 (485, 48%), 1 (515, 52%) 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{dx\_diabetes}
+
+{\smaller
+\begin{tabular}{ rrrrr }
+n&missing&unique&Info&Mean \\
+938&62&2&0.51&1.215 \end{tabular}
+\begin{verbatim}
+
+1 (736, 78%), 2 (202, 22%) 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{dx\_chf}
+
+{\smaller
+\begin{tabular}{ rrr }
+n&missing&unique \\
+1000&0&2 \end{tabular}
+\begin{verbatim}
+
+0 (787, 79%), 1 (213, 21%) 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{smoking}
+
+{\smaller
+\begin{tabular}{ rrr }
+n&missing&unique \\
+1000&0&2 \end{tabular}
+\begin{verbatim}
+
+0 (890, 89%), 1 (110, 11%) 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{race}
+
+{\smaller
+\begin{tabular}{ rrr }
+n&missing&unique \\
+1000&0&2 \end{tabular}
+\begin{verbatim}
+
+0 (190, 19%), 1 (810, 81%) 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+\vbox{\noindent\textbf{treat}
+
+{\smaller
+\begin{tabular}{ rrr }
+n&missing&unique \\
+1000&0&2 \end{tabular}
+\begin{verbatim}
+
+0 (533, 53%), 1 (467, 47%) 
+\end{verbatim}
+}
+\smallskip\hrule\smallskip
+}
+}\end{spacing}
+
+Looking at this, we see that age and diabetes diagnosis both have missing values. Let's look more at that! We can use Harrell's \texttt{naclus} and \texttt{naplot} functions to look at the fraction missing in each variable,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{n}\hlkwb{<-}\hlkwd{naclus}\hlstd{(dat)}
+\hlstd{a}\hlkwb{<-}\hlkwd{naplot}\hlstd{(n,} \hlkwc{which}\hlstd{=(}\hlstr{'na per var'}\hlstd{))}
+\end{alltt}
+\end{kframe}\begin{figure}[H]
+\includegraphics[width=\maxwidth]{figure/unnamed-chunk-7-1} \caption[This plot shows us the fraction of missing for each variable]{This plot shows us the fraction of missing for each variable. We see that diabetes has 10 percent missing and age has about 20 percent missing.}\label{fig:unnamed-chunk-7}
+\end{figure}
+
+
+\end{knitrout}
+\section*{Multiple Imputation}
+To perform multiple imputation, we will use Harrell's \texttt{aregImpute} function. This will use predictive mean matching by default. Because the variable with the largest missingness has 20$\%$ missing, we will perform 20 imputations. To impute all variables with one line of code, we will put everything on the right side of the equation, separated by $+$. The continuous covariates are fit with restricted cubic splines. The \texttt{nk} option lets us set the number of knots. I will set it to the default, 4. I will name my imputation object \texttt{dat.imp}. We can use this later to perform the propensity score analysis
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{set.seed}\hlstd{(}\hlnum{91690}\hlstd{)}
+\hlstd{dat.imp} \hlkwb{<-} \hlkwd{aregImpute}\hlstd{(}\hlopt{~}\hlstd{age} \hlopt{+} \hlstd{sex} \hlopt{+} \hlstd{dx_diabetes} \hlopt{+} \hlstd{dx_chf} \hlopt{+} \hlstd{smoking} \hlopt{+} \hlstd{race} \hlopt{+} \hlstd{treat,}
+    \hlkwc{n.impute} \hlstd{=} \hlnum{20}\hlstd{,} \hlkwc{nk} \hlstd{=} \hlnum{4}\hlstd{,} \hlkwc{data} \hlstd{= dat,} \hlkwc{pr} \hlstd{= F)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\section*{Propensity Scores}
+To generate the propensity scores, we will fit a logistic regression. To do this, we will use Harrell's \texttt{lrm()} function. In order to incorporate the multiple imputations, we will use Harrell's \texttt{fit.mult.impute()}. I am going to fit the continuous covariate (age) as a restricted cubic spline with 3 knots with the \texttt{rcs()} function. Here is the code,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fit} \hlkwb{<-} \hlkwd{fit.mult.impute}\hlstd{(treat} \hlopt{~} \hlkwd{rcs}\hlstd{(age,} \hlnum{3}\hlstd{)} \hlopt{+} \hlstd{sex} \hlopt{+} \hlstd{race} \hlopt{+} \hlstd{smoking} \hlopt{+} \hlstd{dx_diabetes} \hlopt{+}
+    \hlstd{dx_chf,} \hlkwc{fitter} \hlstd{= lrm,} \hlkwc{data} \hlstd{= dat,} \hlkwc{xtrans} \hlstd{= dat.imp,} \hlkwc{pr} \hlstd{= F)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+Notice that we incorporated the imputation object with the \texttt{xtrans} option, and we set the \texttt{fitter} to \texttt{lrm}, to invoke a logistic regression model. Lets look at that model. I am going to print it with the latex function, so it looks pretty,
+\begin{kframe}
+\begin{alltt}
+\hlkwd{print}\hlstd{(fit,}\hlkwc{latex}\hlstd{=T)}
+\end{alltt}
+\end{kframe}
+\vspace{1ex}
+
+\centerline{\textbf{Logistic Regression Model}}
+\vspace{1ex}
+
+\begin{verbatim}
+fit.mult.impute(formula = treat ~ rcs(age, 3) + sex + race + 
+    smoking + dx_diabetes + dx_chf, fitter = lrm, xtrans = dat.imp, 
+    data = dat, pr = F)
+\end{verbatim}
+\centerline{\begin{tabular}{|c|c|c|c|}\hline
+&Model Likelihood&Discrimination&Rank Discrim.\\ 
+&Ratio Test& Indexes&Indexes\\ 
+\hline
+Obs~\hfill 1000&LR $\chi^{2}$~\hfill 228.24&$R^{2}$~\hfill 0.272&$C$~\hfill 0.763\\ 
+~~0~\hfill 533&d.f.~\hfill 7&$g$~\hfill 1.302&$D_{xy}$~\hfill 0.527\\ 
+~~1~\hfill 467&Pr$(>\chi^{2})$~\hfill $<0.0001$&$g_{r}$~\hfill 3.677&$\gamma$~\hfill 0.529\\ 
+$\max|\frac{\partial\log L}{\partial \beta}|$~\hfill $9\!\times\!10^{-12}$&&$g_{p}$~\hfill 0.261&$\tau_{a}$~\hfill 0.262\\ 
+&&Brier~\hfill 0.197&\\ 
+\hline
+\end{tabular}}
+
+
+\vspace{1ex}
+
+%latex.default(U, file = file, first.hline.double = FALSE, table = FALSE,     longtable = TRUE, lines.page = lines.page, col.just = rep("r",         ncol(U)), rowlabel = "", math.col.names = TRUE, append = TRUE)%
+\setlongtables\begin{longtable}{lrrrr}\hline
+\multicolumn{1}{l}{}&\multicolumn{1}{c}{$\textrm{~Coef~}$}&\multicolumn{1}{c}{$\textrm{~S.E.~}$}&\multicolumn{1}{c}{$\textrm{Wald~} Z$}&\multicolumn{1}{c}{$\textrm{Pr}(>|Z|)$}\tabularnewline
+\hline
+\endhead
+\hline
+\endfoot
+Intercept&~ 1.7572~&~0.5111~& 3.44&0.0006\tabularnewline
+age&~ 0.0345~&~0.0183~& 1.89&0.0591\tabularnewline
+age'&~-0.0132~&~0.0214~&-0.62&0.5367\tabularnewline
+sex=1&~ 0.9222~&~0.1465~& 6.29&$<0.0001$\tabularnewline
+race=1&~-1.4571~&~0.1976~&-7.37&$<0.0001$\tabularnewline
+smoking=1&~ 0.8377~&~0.2349~& 3.57&0.0004\tabularnewline
+dx\_diabetes&~-1.7304~&~0.2043~&-8.47&$<0.0001$\tabularnewline
+dx\_chf=1&~-0.8738~&~0.1820~&-4.80&$<0.0001$\tabularnewline
+\hline
+\end{longtable}
+\addtocounter{table}{-1}
+
+
+Now let's extract the propensity scores using the \texttt{predict()} function. 
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{dat}\hlopt{$}\hlstd{p}\hlkwb{<-}\hlkwd{predict}\hlstd{(fit)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+Let's look at the distribution of propensity scores for the treatment and control group using the \texttt{hist()} and \texttt{plot()} functions,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{p1}\hlkwb{<-}\hlkwd{hist}\hlstd{(dat}\hlopt{$}\hlstd{p[dat}\hlopt{$}\hlstd{treat}\hlopt{==}\hlnum{1}\hlstd{])}
+\hlstd{p2}\hlkwb{<-}\hlkwd{hist}\hlstd{(dat}\hlopt{$}\hlstd{p[dat}\hlopt{$}\hlstd{treat}\hlopt{==}\hlnum{0}\hlstd{])}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{plot}\hlstd{(p1,} \hlkwc{col} \hlstd{=} \hlkwd{rgb}\hlstd{(}\hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{1}\hlstd{,} \hlnum{1}\hlopt{/}\hlnum{4}\hlstd{),} \hlkwc{ylim} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,} \hlnum{150}\hlstd{),} \hlkwc{xlim} \hlstd{=} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{4}\hlstd{,} \hlnum{4}\hlstd{),} \hlkwc{main} \hlstd{=} \hlstr{"Propensity Score Distribution"}\hlstd{,}
+    \hlkwc{xlab} \hlstd{=} \hlstr{"Propensity Score (logit)"}\hlstd{)}
+\hlkwd{plot}\hlstd{(p2,} \hlkwc{col} \hlstd{=} \hlkwd{rgb}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{1}\hlopt{/}\hlnum{4}\hlstd{),} \hlkwc{add} \hlstd{= T)}
+\end{alltt}
+\end{kframe}\begin{figure}[H]
+\includegraphics[width=\maxwidth]{figure/unnamed-chunk-13-1} \caption[The control group propensity scores are shown in red, and the treatment group in black]{The control group propensity scores are shown in red, and the treatment group in black}\label{fig:unnamed-chunk-13}
+\end{figure}
+
+
+\end{knitrout}
+\section*{Matching!}
+Now let's match them with a caliper of $.2\times SD$, 
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{prop} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{id} \hlstd{= dat}\hlopt{$}\hlstd{id,} \hlkwc{treat} \hlstd{= dat}\hlopt{$}\hlstd{treat,} \hlkwc{p} \hlstd{= dat}\hlopt{$}\hlstd{p)}
+\hlstd{match} \hlkwb{<-} \hlkwd{matchit}\hlstd{(treat} \hlopt{~} \hlstd{p,} \hlkwc{data} \hlstd{= prop,} \hlkwc{method} \hlstd{=} \hlstr{"nearest"}\hlstd{,} \hlkwc{caliper} \hlstd{=} \hlnum{0.2}\hlstd{)}
+\hlkwd{summary}\hlstd{(match)}
+\end{alltt}
+\begin{verbatim}
+## 
+## Call:
+## matchit(formula = treat ~ p, data = prop, method = "nearest", 
+##     caliper = 0.2)
+## 
+## Summary of balance for all data:
+##          Means Treated Means Control SD Control Mean Diff eQQ Med eQQ Mean
+## distance        0.5820        0.3663     0.2068    0.2157  0.2284   0.2165
+## p               0.3754       -0.6713     1.0557    1.0466  1.0052   1.0525
+##          eQQ Max
+## distance  0.2798
+## p         1.5028
+## 
+## 
+## Summary of balance for matched data:
+##          Means Treated Means Control SD Control Mean Diff eQQ Med eQQ Mean
+## distance        0.5086        0.4829     0.1790    0.0257  0.0223   0.0263
+## p               0.0327       -0.0884     0.8136    0.1211  0.0977   0.1248
+##          eQQ Max
+## distance  0.0463
+## p         0.6973
+## 
+## Percent Balance Improvement:
+##          Mean Diff. eQQ Med eQQ Mean eQQ Max
+## distance    88.0781 90.2465  87.8549 83.4662
+## p           88.4336 90.2814  88.1422 53.5993
+## 
+## Sample sizes:
+##           Control Treated
+## All           533     467
+## Matched       312     312
+## Unmatched     221     155
+## Discarded       0       0
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+Let's get a dataset of only the matched pairs
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{m.dat} \hlkwb{<-} \hlkwd{match.data}\hlstd{(match)}
+\hlstd{m.dat} \hlkwb{<-} \hlstd{dat[dat}\hlopt{$}\hlstd{id} \hlopt{%in%} \hlstd{m.dat}\hlopt{$}\hlstd{id, ]}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\section*{Assess Balance}
+Now let's look at the tables before and after matching
+\begin{kframe}
+\begin{alltt}
+\hlstd{vars} \hlkwb{<-} \hlkwd{Cs}\hlstd{(age, race, sex, smoking, dx_diabetes, dx_chf)}
+\hlstd{summByDx} \hlkwb{<-} \hlkwd{summaryM}\hlstd{(}\hlkwd{as.formula}\hlstd{(}\hlkwd{paste}\hlstd{(}\hlkwd{paste}\hlstd{(vars,} \hlkwc{collapse} \hlstd{=} \hlstr{"+"}\hlstd{),} \hlstr{"~ treat"}\hlstd{)),}
+    \hlkwc{data} \hlstd{= dat,} \hlkwc{overall} \hlstd{= T)}
+\hlstd{summByDx2} \hlkwb{<-} \hlkwd{summaryM}\hlstd{(}\hlkwd{as.formula}\hlstd{(}\hlkwd{paste}\hlstd{(}\hlkwd{paste}\hlstd{(vars,} \hlkwc{collapse} \hlstd{=} \hlstr{"+"}\hlstd{),} \hlstr{"~ treat"}\hlstd{)),}
+    \hlkwc{data} \hlstd{= m.dat,} \hlkwc{overall} \hlstd{= T)}
+\hlkwd{latex}\hlstd{(summByDx,} \hlkwc{file} \hlstd{=} \hlstr{""}\hlstd{,} \hlkwc{center} \hlstd{=} \hlstr{"centering"}\hlstd{,} \hlkwc{what} \hlstd{=} \hlstr{"%"}\hlstd{,} \hlkwc{where} \hlstd{=} \hlstr{"H"}\hlstd{,} \hlkwc{caption} \hlstd{=} \hlstr{"Pre-Matching Descriptive Statistics"}\hlstd{)}
+\end{alltt}
+\end{kframe}%latex.default(cstats, title = title, file = file, append = TRUE,     caption = if ((!tabenv1 && table.env) || (tabenv1 && istr ==         1)) paste(caption, if ((!tabenv1 && laststrat) || (tabenv1 &&         istr == 1)) paste(legend, collapse = " "), sep = ". "),     rowlabel = rowlabel, table.env = (!tabenv1 && table.env) ||         (tabenv1 && istr == 1), col.just = col.just, numeric.dollar = FALSE,     insert.bottom = if (!noib && laststrat && !table.env) legend,     rowname = lab, dcolumn = dcolumn, extracolheads = extracolheads,     extracolsize = Nsize, insert.top = if (strat != ".ALL.") strat,     ...)%
+\begin{table}[H]
+\caption{Pre-Matching Descriptive Statistics. {\scriptsize $a$\ }{$b$\ }{\scriptsize $c$\ } represent the lower quartile $a$, the median $b$, and the upper quartile $c$\ for continuous variables. $N$\ is the number of non--missing values. Numbers after percents are frequencies.\label{summByDx}} 
+{\centering
+\begin{tabular}{lrccc}
+\hline\hline
+\multicolumn{1}{l}{}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{0}&\multicolumn{1}{c}{1}&\multicolumn{1}{c}{Combined}\tabularnewline
+&&\multicolumn{1}{c}{{\scriptsize $N=533$}}&\multicolumn{1}{c}{{\scriptsize $N=467$}}&\multicolumn{1}{c}{{\scriptsize $N=1000$}}\tabularnewline
+\hline
+age& 793&{\scriptsize 23~}{29 }{\scriptsize 36} &{\scriptsize 24~}{32 }{\scriptsize 38} &{\scriptsize 24~}{30 }{\scriptsize 37} \tabularnewline
+race&1000&90\%~{\scriptsize~(478)}&71\%~{\scriptsize~(332)}&81\%~{\scriptsize~(810)}\tabularnewline
+sex&1000&43\%~{\scriptsize~(231)}&61\%~{\scriptsize~(284)}&52\%~{\scriptsize~(515)}\tabularnewline
+smoking&1000&~9\%~{\scriptsize~(~47)}&13\%~{\scriptsize~(~63)}&11\%~{\scriptsize~(110)}\tabularnewline
+dx\_diabetes~:~2& 938&33\%~{\scriptsize~(162)}&~9\%~{\scriptsize~(~40)}&22\%~{\scriptsize~(202)}\tabularnewline
+dx\_chf&1000&27\%~{\scriptsize~(145)}&15\%~{\scriptsize~(~68)}&21\%~{\scriptsize~(213)}\tabularnewline
+\hline
+\end{tabular}}
+
+\end{table}
+\begin{kframe}\begin{alltt}
+\hlkwd{latex}\hlstd{(summByDx2,} \hlkwc{file} \hlstd{=} \hlstr{""}\hlstd{,} \hlkwc{center} \hlstd{=} \hlstr{"centering"}\hlstd{,} \hlkwc{what} \hlstd{=} \hlstr{"%"}\hlstd{,} \hlkwc{where} \hlstd{=} \hlstr{"H"}\hlstd{,} \hlkwc{caption} \hlstd{=} \hlstr{"Post-Matching Descriptive Statistics"}\hlstd{)}
+\end{alltt}
+\end{kframe}%latex.default(cstats, title = title, file = file, append = TRUE,     caption = if ((!tabenv1 && table.env) || (tabenv1 && istr ==         1)) paste(caption, if ((!tabenv1 && laststrat) || (tabenv1 &&         istr == 1)) paste(legend, collapse = " "), sep = ". "),     rowlabel = rowlabel, table.env = (!tabenv1 && table.env) ||         (tabenv1 && istr == 1), col.just = col.just, numeric.dollar = FALSE,     insert.bottom = if (!noib && laststrat && !table.env) legend,     rowname = lab, dcolumn = dcolumn, extracolheads = extracolheads,     extracolsize = Nsize, insert.top = if (strat != ".ALL.") strat,     ...)%
+\begin{table}[H]
+\caption{Post-Matching Descriptive Statistics. {\scriptsize $a$\ }{$b$\ }{\scriptsize $c$\ } represent the lower quartile $a$, the median $b$, and the upper quartile $c$\ for continuous variables. $N$\ is the number of non--missing values. Numbers after percents are frequencies.\label{summByDx2}} 
+{\centering
+\begin{tabular}{lrccc}
+\hline\hline
+\multicolumn{1}{l}{}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{0}&\multicolumn{1}{c}{1}&\multicolumn{1}{c}{Combined}\tabularnewline
+&&\multicolumn{1}{c}{{\scriptsize $N=312$}}&\multicolumn{1}{c}{{\scriptsize $N=312$}}&\multicolumn{1}{c}{{\scriptsize $N=624$}}\tabularnewline
+\hline
+age&492&{\scriptsize 24~}{31 }{\scriptsize 38} &{\scriptsize 24~}{32 }{\scriptsize 38} &{\scriptsize 24~}{31 }{\scriptsize 38} \tabularnewline
+race&624&86\%~{\scriptsize~(268)}&82\%~{\scriptsize~(257)}&84\%~{\scriptsize~(525)}\tabularnewline
+sex&624&50\%~{\scriptsize~(157)}&53\%~{\scriptsize~(166)}&52\%~{\scriptsize~(323)}\tabularnewline
+smoking&624&12\%~{\scriptsize~(~36)}&12\%~{\scriptsize~(~38)}&12\%~{\scriptsize~(~74)}\tabularnewline
+dx\_diabetes~:~2&588&12\%~{\scriptsize~(~35)}&13\%~{\scriptsize~(~38)}&12\%~{\scriptsize~(~73)}\tabularnewline
+dx\_chf&624&18\%~{\scriptsize~(~56)}&18\%~{\scriptsize~(~55)}&18\%~{\scriptsize~(111)}\tabularnewline
+\hline
+\end{tabular}}
+
+\end{table}
+
+We can also look at the propensity scores post matching,
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{p1}\hlkwb{<-}\hlkwd{hist}\hlstd{(m.dat}\hlopt{$}\hlstd{p[dat}\hlopt{$}\hlstd{treat}\hlopt{==}\hlnum{1}\hlstd{])}
+\hlstd{p2}\hlkwb{<-}\hlkwd{hist}\hlstd{(m.dat}\hlopt{$}\hlstd{p[dat}\hlopt{$}\hlstd{treat}\hlopt{==}\hlnum{0}\hlstd{])}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{plot}\hlstd{(p1,} \hlkwc{col} \hlstd{=} \hlkwd{rgb}\hlstd{(}\hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{1}\hlstd{,} \hlnum{1}\hlopt{/}\hlnum{4}\hlstd{),} \hlkwc{ylim} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,} \hlnum{150}\hlstd{),} \hlkwc{xlim} \hlstd{=} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{4}\hlstd{,} \hlnum{4}\hlstd{),} \hlkwc{main} \hlstd{=} \hlstr{"Post-Matching Propensity Score Distribution"}\hlstd{,}
+    \hlkwc{xlab} \hlstd{=} \hlstr{"Propensity Score (logit)"}\hlstd{)}
+\hlkwd{plot}\hlstd{(p2,} \hlkwc{col} \hlstd{=} \hlkwd{rgb}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{1}\hlopt{/}\hlnum{4}\hlstd{),} \hlkwc{add} \hlstd{= T)}
+\end{alltt}
+\end{kframe}\begin{figure}[H]
+\includegraphics[width=\maxwidth]{figure/unnamed-chunk-18-1} \caption[The control group propensity scores are shown in red, and the treatment group in black]{The control group propensity scores are shown in red, and the treatment group in black}\label{fig:unnamed-chunk-18}
+\end{figure}
+
+
+\end{knitrout}
+\end{document}

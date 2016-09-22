@@ -1,0 +1,132 @@
+\documentclass{article}
+\usepackage{fancyhdr}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{gensymb}
+\usepackage{enumerate}
+\usepackage{longtable,cancel,booktabs,lscape,float,subcaption}
+\usepackage{needspace,setspace,relsize,url}
+ \textwidth 6.75in              % set dimensions before fancyhdr
+ \textheight 9.25in
+ \topmargin -.875in
+ \oddsidemargin -.125in
+ \evensidemargin -.125in
+
+\title{Propensity Scores with R Tutorial}
+\author{Lucy D'Agostino McGowan}
+\date{\today}
+\newcommand{\bn}[1]{\mathbf{#1}}
+\newcommand{\bs}{\boldsymbol}
+
+\begin{document}
+ 	\pagestyle{fancy}
+ \rhead{\scriptsize Lucy D'Agostino McGowan - R Tutorial\\ \today}
+\allowdisplaybreaks
+\maketitle
+\section*{Install R Packages}
+For this tutorial, you will need Frank Harrell's Regression Modeling Strategies package, Matt Shotwell's package to read in SAS datasets, and the MatchIt package for matching. If this has not yet been installed, run \texttt{install.packages("rms")}, \texttt{install.packages("sas7bdat")}, and \texttt{install.packages("MatchIt")}. Otherwise, run the following,
+<<warnings=F,message=F>>=
+require(rms)
+require(sas7bdat)
+require(MatchIt)
+@
+\section*{Read in your data}
+There are many different ways to read in data. Here, I will demonstrate how to read in .csv files and SAS data files. Here \texttt{dat} is what I am naming the dataset in \texttt{R}. The file path for my data is\\ ``/Users/lucymcgowan/Documents/Consulting/Edwards/data.csv''. I will first use the \texttt{read.csv()} function,
+<<eval=F>>=
+dat<-read.csv("/Users/lucymcgowan/Documents/Consulting/Edwards/data.csv")
+@
+If the data was a SAS dataset, you can import it as follows,
+<<eval=F>>=
+dat<-read.sas7bdat("/Users/lucymcgowan/Documents/Consulting/Edwards/data.sas7bdat")
+@
+<<echo=F>>=
+set.seed(91690)
+id<-seq(1,1000,1)
+age<-round(rnorm(1000,30,10))
+sex<-rbinom(1000,1,.5)
+dx_diabetes<-rbinom(1000,1,.2)
+dx_chf<-rbinom(1000,1,.2)
+smoking<-rbinom(1000,1,.1)
+race<-rbinom(1000,1,.82)
+xb<-.04*age+1.01*sex-2*dx_diabetes-1.1*dx_chf+1.01*smoking-1.5*race+rnorm(1000,0,1)
+p<-exp(xb)/(1+exp(xb))
+treat<-rbinom(1000,1,p)
+dat<-data.frame(id=id,age=age,sex=as.factor(sex),dx_diabetes=as.factor(dx_diabetes),dx_chf=as.factor(dx_chf),smoking=as.factor(smoking),
+	race=as.factor(race),treat=as.factor(treat))
+	dat$age<-ifelse(rbinom(1000,1,.8)<1,NA,dat$age)
+	dat$dx_diabetes<-ifelse(rbinom(1000,1,.94)<1,NA,dat$dx_diabetes)
+@
+\section*{Run descriptive Statistics}
+To look at descriptives, we can use Harrell's \texttt{describe()} function,
+<<eval=F>>=
+describe(dat)
+@
+<<results="asis",echo=F>>=
+latex(describe(dat),file="")
+@
+Looking at this, we see that age and diabetes diagnosis both have missing values. Let's look more at that! We can use Harrell's \texttt{naclus} and \texttt{naplot} functions to look at the fraction missing in each variable,
+<<fig.pos="H",fig.height=4,fig.cap="This plot shows us the fraction of missing for each variable. We see that diabetes has 10 percent missing and age has about 20 percent missing.">>=
+n<-naclus(dat)
+a<-naplot(n, which=('na per var'))
+@
+\section*{Multiple Imputation}
+To perform multiple imputation, we will use Harrell's \texttt{aregImpute} function. This will use predictive mean matching by default. Because the variable with the largest missingness has 20$\%$ missing, we will perform 20 imputations. To impute all variables with one line of code, we will put everything on the right side of the equation, separated by $+$. The continuous covariates are fit with restricted cubic splines. The \texttt{nk} option lets us set the number of knots. I will set it to the default, 4. I will name my imputation object \texttt{dat.imp}. We can use this later to perform the propensity score analysis
+<<tidy=T>>=
+set.seed(91690)
+dat.imp<-aregImpute(~age+sex+dx_diabetes+dx_chf+smoking+race+treat,n.impute=20,nk=4,data=dat,pr=F)
+@
+\section*{Propensity Scores}
+To generate the propensity scores, we will fit a logistic regression. To do this, we will use Harrell's \texttt{lrm()} function. In order to incorporate the multiple imputations, we will use Harrell's \texttt{fit.mult.impute()}. I am going to fit the continuous covariate (age) as a restricted cubic spline with 3 knots with the \texttt{rcs()} function. Here is the code,
+<<tidy=T>>=
+fit<-fit.mult.impute(treat~rcs(age,3)+sex+race+smoking+dx_diabetes+dx_chf,fitter=lrm,data=dat,xtrans=dat.imp,pr=F)
+@
+Notice that we incorporated the imputation object with the \texttt{xtrans} option, and we set the \texttt{fitter} to \texttt{lrm}, to invoke a logistic regression model. Lets look at that model. I am going to print it with the latex function, so it looks pretty,
+<<results="asis">>=
+print(fit,latex=T)
+@
+Now let's extract the propensity scores using the \texttt{predict()} function. 
+<<>>=
+dat$p<-predict(fit)
+@
+Let's look at the distribution of propensity scores for the treatment and control group using the \texttt{hist()} and \texttt{plot()} functions,
+<<fig.show='hide'>>=
+p1<-hist(dat$p[dat$treat==1])
+p2<-hist(dat$p[dat$treat==0])
+@
+<<fig.cap="The control group propensity scores are shown in red, and the treatment group in black",fig.width=5,fig.height=5,fig.pos="H",tidy=T>>=
+plot(p1,col=rgb(0,0,1,1/4),ylim=c(0,150),xlim=c(-4,4),main="Propensity Score Distribution", xlab="Propensity Score (logit)")
+plot(p2,col=rgb(1,0,0,1/4),add=T)
+@
+\section*{Matching!}
+Now let's match them with a caliper of $.2\times SD$, 
+<<tidy=T>>=
+prop<-data.frame(id=dat$id,treat=dat$treat,p=dat$p)
+match<-matchit(treat~p,data=prop,method="nearest",caliper=.2)
+summary(match)
+@
+Let's get a dataset of only the matched pairs
+<<tidy=T>>=
+m.dat<-match.data(match)
+m.dat<-dat[dat$id %in% m.dat$id,]
+@
+\section*{Assess Balance}
+Now let's look at the tables before and after matching
+<<results="asis",tidy=T>>=
+vars<-Cs(age,race,sex,smoking,dx_diabetes,dx_chf)
+summByDx<-summaryM(as.formula(paste(paste(vars,collapse="+"),"~ treat")),data=dat,overall=T)
+summByDx2<-summaryM(as.formula(paste(paste(vars,collapse="+"),"~ treat")),data=m.dat,overall=T)
+latex(summByDx,file="",center="centering",what = "%",where="H"
+,caption="Pre-Matching Descriptive Statistics")
+latex(summByDx2,file="",center="centering",what = "%",where="H"
+,caption="Post-Matching Descriptive Statistics")
+@
+We can also look at the propensity scores post matching,
+<<fig.show='hide'>>=
+p1<-hist(m.dat$p[dat$treat==1])
+p2<-hist(m.dat$p[dat$treat==0])
+@
+<<fig.cap="The control group propensity scores are shown in red, and the treatment group in black",fig.width=5,fig.height=5,fig.pos="H",tidy=T>>=
+plot(p1,col=rgb(0,0,1,1/4),ylim=c(0,150),xlim=c(-4,4),main="Post-Matching Propensity Score Distribution", xlab="Propensity Score (logit)")
+plot(p2,col=rgb(1,0,0,1/4),add=T)
+@
+\end{document}
