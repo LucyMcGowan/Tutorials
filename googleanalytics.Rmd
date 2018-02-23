@@ -7,7 +7,7 @@ output: html_document
 
 We recently attempted to pull Google Analytics data and found the process a bit confusing, so we put together an overly specific step by step guide.
 
-###Step 1
+### Step 1
 
 Go to the [Google API Dashboard](https://console.developers.google.com/iam-admin/projects) 
 
@@ -17,7 +17,7 @@ Go to the [Google API Dashboard](https://console.developers.google.com/iam-admin
 - Follow steps to create a client id, then download the JSON data and extract the client ID and secret and put it in your script (or somewhere safer). 
 - The first time you implement this code, you will put the client id and client secret in (as demonstrated below). After this, you can save these tokens and load them for future use.
 
-###Step 2
+### Step 2
 - load the `RGoogleAnalytics` package
 - For the first run, input the client id and client secret in quotes
 - Create a `token`
@@ -44,7 +44,7 @@ load("./token_file")
 # Validate the token
 ValidateToken(token)
 ```
-###Step 3
+### Step 3
 Create a query list
 - Indicate the date range you are interested in accessing data from using the `start.date` and `end.date` inputs
 - Add `dimensions` and `metrics` that you are interested in the form `ga:` then the name of the dimension/metric. A list of dimensions and metrics availabe can be found on the [Google Analytics Website](https://developers.google.com/analytics/devguides/reporting/core/dimsmets)
@@ -62,7 +62,7 @@ query.init <- Init(start.date = "2015-01-01",
                    filters="ga:medium==referral"
                    table.id = "ga:123456")
 ```
-###Step 4
+### Step 4
 Use the `QueryBuilder` to build the query list and `GetReportData` to pull the data into a data frame.
 ```{r,eval=F}
 query <- QueryBuilder(query.init)
