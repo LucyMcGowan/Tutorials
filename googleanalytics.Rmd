@@ -9,7 +9,7 @@ We recently attempted to pull Google Analytics data and found the process a bit 
 
 ### Step 1
 
-Go to the [Google API Dashboard](https://console.developers.google.com/iam-admin/projects) 
+Go to the [Google API Dashboard](https://console.developers.google.com/apis/dashboard) 
 
 - On the top right there is a "Select a Project" drop down. Click "Create a Project" to create one.
 - In the Overview tab there is a "Google APIs" tab and an "Enabled APIs" tab on the right with a search bar below them. Search "Analytics API" and select the result by the same name.
